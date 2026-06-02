@@ -62,7 +62,7 @@ kpi1, kpi2, kpi3, kpi4 = st.columns(4)
 kpi1.metric("Live signals", len(filtered))
 kpi2.metric("High priority", int((filtered["priority"] == "High").sum()) if len(filtered) else 0)
 kpi3.metric("Avg. lead score", round(filtered["lead_score"].mean(), 1) if len(filtered) else 0)
-kpi4.metric("Sources", int(filtered["source_name"].nunique()) if len(filtered) else 0)
+kpi4.metric("Contacts enriched", int((filtered["founder_name"] != "To be enriched").sum()) if len(filtered) and "founder_name" in filtered.columns else 0)
 
 st.divider()
 
@@ -85,6 +85,10 @@ visible_columns = [
     "country",
     "segment",
     "founder_name",
+    "founder_title",
+    "business_email",
+    "business_phone",
+    "contact_enrichment_status",
     "trigger",
     "payment_signal",
     "lead_score",
@@ -124,7 +128,11 @@ if len(filtered):
         st.markdown(f"### {row['startup_name']}")
         st.write(f"**Country:** {row['country']}")
         st.write(f"**Segment:** {row['segment']}")
-        st.write(f"**Founder/contact:** {row['founder_name']}")
+        st.write(f"**Founder:** {row.get('founder_name', 'To be enriched')}")
+        st.write(f"**Founder title:** {row.get('founder_title', 'Founder / leadership to verify')}")
+        st.write(f"**Business email:** {row.get('business_email', 'Not publicly listed in source')}")
+        st.write(f"**Business phone:** {row.get('business_phone', 'Not publicly listed in source')}")
+        st.write(f"**Contact status:** {row.get('contact_enrichment_status', 'To be enriched')}")
         st.write(f"**Lead score:** {row['lead_score']} / 100")
         st.write(f"**Priority:** {row['priority']}")
         if row.get("source_url"):
@@ -145,11 +153,12 @@ st.divider()
 st.subheader("Contact Enrichment & Compliance")
 st.write(
     "This live version discovers real startup signals from public sources. "
-    "Founder emails/phones should be enriched only from official company websites, licensed enrichment APIs, or clearly published business contacts. "
-    "The dashboard keeps source URLs and verification fields so sales does not use unsourced personal data."
+    "Founder names are extracted only when available in public article text. "
+    "Email and phone fields are now visible, but are marked as 'Not publicly listed' unless a compliant source provides them. "
+    "Production should enrich these via official company websites, licensed enrichment APIs, or clearly published business contacts."
 )
 
-audit_cols = ["startup_name", "source_name", "source_url", "data_confidence", "last_verified"]
+audit_cols = ["startup_name", "founder_name", "business_email", "business_phone", "contact_enrichment_status", "source_name", "source_url", "data_confidence", "last_verified"]
 st.dataframe(
     filtered[audit_cols] if len(filtered) else pd.DataFrame(columns=audit_cols),
     use_container_width=True,
